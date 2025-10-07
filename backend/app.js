@@ -11,7 +11,7 @@ const configRoutes = require("./routes/configRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const statsRoutes = require("./routes/statsRoutes");
 const enrollmentRoutes = require("./routes/enrollmentRoutes");
-const paymentRoutes = require("./routes/paymentRoutes");
+const pagoRoutes = require("./routes/pagoRoutes");
 const tipoPagoRoutes = require("./routes/tipoPagoRoutes");
 const metodoPagoRoutes = require("./routes/metodoPagoRoutes");
 
@@ -34,7 +34,7 @@ app.use("/api/config", configRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
-app.use("/api/payments", paymentRoutes);
+app.use("/api/pagos", pagoRoutes);
 app.use("/api/tipos_pago", tipoPagoRoutes);
 app.use("/api/metodos_pago", metodoPagoRoutes);
 

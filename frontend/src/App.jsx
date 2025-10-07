@@ -16,6 +16,7 @@ import UserFormPage from "./pages/UserFormPage";
 import MatriculasListPage from "./pages/MatriculasListPage";
 import MatriculaFormPage from "./pages/MatriculaFormPage";
 import PagosListPage from "./pages/PagosListPage";
+import PagoFormPage from "./pages/PagoFormPage";
 import EstudiantesListPage from "./pages/EstudiantesListPage";
 import EstudianteFormPage from "./pages/StudentFormPage";
 import ReportesPage from "./pages/ReportesPage";
@@ -103,6 +104,24 @@ function App() {
               element={
                 <ProtectedRoute
                   element={PagosListPage}
+                  allowedRoles={generalManagerRoles}
+                />
+              }
+            />
+            <Route
+              path="/pagos/new"
+              element={
+                <ProtectedRoute
+                  element={PagoFormPage}
+                  allowedRoles={generalManagerRoles}
+                />
+              }
+            />
+            <Route
+              path="/pagos/edit/:id"
+              element={
+                <ProtectedRoute
+                  element={PagoFormPage}
                   allowedRoles={generalManagerRoles}
                 />
               }
@@ -231,7 +250,7 @@ function App() {
               path="/configuracion/metodos_pago"
               element={
                 <ProtectedRoute
-                  element={MetodosPagoConfigPage} 
+                  element={MetodosPagoConfigPage}
                   allowedRoles={["Administrador"]}
                 />
               }
