@@ -47,6 +47,7 @@ const DashboardPage = () => {
 
   const handleQuickAction = (action) => {
     console.log(`Ejecutando acción rápida: ${action}`);
+    navigate(`/${action}`);
   };
 
   return (
@@ -92,13 +93,13 @@ const DashboardPage = () => {
               </h3>
               <div className="flex space-x-4">
                 <button
-                  onClick={() => handleQuickAction("new_matricula")}
+                  onClick={() => handleQuickAction("matriculas")}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
                 >
                   Nueva Matrícula
                 </button>
                 <button
-                  onClick={() => handleQuickAction("register_payment")}
+                  onClick={() => handleQuickAction("pagos")}
                   className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
                 >
                   Registrar Pago

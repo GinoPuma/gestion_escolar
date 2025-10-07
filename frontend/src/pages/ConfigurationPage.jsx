@@ -41,6 +41,22 @@ const ConfigurationPage = () => {
           <h3 className="text-lg font-bold mb-2">Secciones</h3>
           <p className="text-sm">Definir las secciones por grado.</p>
         </Link>
+
+        <Link
+          to="/configuracion/tipos_pago"
+          className="block p-6 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg shadow text-center transition duration-300"
+        >
+          <h3 className="text-lg font-bold mb-2">Tipos de Pago</h3>
+          <p className="text-sm">Gestionar métodos de pago.</p>
+        </Link>
+
+        <Link
+          to="/configuracion/metodos_pago"
+          className="block p-6 bg-pink-100 hover:bg-pink-200 text-pink-800 rounded-lg shadow text-center transition duration-300"
+        >
+          <h3 className="text-lg font-bold mb-2">Métodos de Pago</h3>
+          <p className="text-sm">Gestionar formas de pago.</p>
+        </Link>
       </div>
     </div>
   );

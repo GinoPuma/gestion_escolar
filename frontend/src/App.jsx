@@ -14,6 +14,7 @@ import AdminUsersPage from "./pages/AdminPage";
 import UserFormPage from "./pages/UserFormPage";
 
 import MatriculasListPage from "./pages/MatriculasListPage";
+import MatriculaFormPage from "./pages/MatriculaFormPage";
 import PagosListPage from "./pages/PagosListPage";
 import EstudiantesListPage from "./pages/EstudiantesListPage";
 import EstudianteFormPage from "./pages/StudentFormPage";
@@ -26,6 +27,8 @@ import InstitutionConfigPage from "./pages/config/InstitutionConfigPage";
 import LevelsConfigPage from "./pages/config/LevelsConfigPage";
 import GradesConfigPage from "./pages/config/GradesConfigPage";
 import SectionsConfigPage from "./pages/config/SectionsConfigPage";
+import TiposPagoConfigPage from "./pages/config/TiposPagoConfigPage";
+import MetodosPagoConfigPage from "./pages/config/MetodosPagoConfigPage";
 
 const ProtectedRoute = ({ element: Element, allowedRoles, ...rest }) => {
   const { user, token, loading } = useAuth();
@@ -76,6 +79,25 @@ function App() {
                 />
               }
             />
+            <Route
+              path="/matriculas/new"
+              element={
+                <ProtectedRoute
+                  element={MatriculaFormPage}
+                  allowedRoles={generalManagerRoles}
+                />
+              }
+            />
+            <Route
+              path="/matriculas/edit/:id"
+              element={
+                <ProtectedRoute
+                  element={MatriculaFormPage}
+                  allowedRoles={generalManagerRoles}
+                />
+              }
+            />
+
             <Route
               path="/pagos"
               element={
@@ -192,6 +214,24 @@ function App() {
               element={
                 <ProtectedRoute
                   element={SectionsConfigPage}
+                  allowedRoles={["Administrador"]}
+                />
+              }
+            />
+            <Route
+              path="/configuracion/tipos_pago"
+              element={
+                <ProtectedRoute
+                  element={TiposPagoConfigPage}
+                  allowedRoles={["Administrador"]}
+                />
+              }
+            />
+            <Route
+              path="/configuracion/metodos_pago"
+              element={
+                <ProtectedRoute
+                  element={MetodosPagoConfigPage} 
                   allowedRoles={["Administrador"]}
                 />
               }

@@ -1,29 +1,38 @@
 const pool = require("../config/db");
+
 const Enrollment = {
   getAll: async (filters = {}) => {
     try {
       let query = `
         SELECT 
-          e.*, 
-          s.primer_nombre AS student_first_name, 
-          s.primer_apellido AS student_last_name, 
-          niv.nombre AS level_name, 
-          gr.nombre AS grade_name, 
-          sec.nombre AS section_name
-        FROM enrollments e
-        JOIN students s ON e.student_id = s.id
-        JOIN grades gr ON e.grade_id = gr.id
-        JOIN niveles_educativos niv ON gr.level_id = niv.id
-        JOIN sections sec ON e.section_id = sec.id
+          m.*,
+          e.primer_nombre AS estudiante_primer_nombre,
+          e.primer_apellido AS estudiante_primer_apellido,
+          ne.nombre AS nombre_nivel,
+          g.nombre AS nombre_grado,
+          s.nombre AS nombre_seccion
+        FROM matriculas m
+        JOIN estudiantes e ON m.estudiante_id = e.id
+        JOIN secciones s ON m.seccion_id = s.id
+        JOIN grados g ON s.grado_id = g.id
+        JOIN niveles_educativos ne ON g.nivel_id = ne.id
       `;
       const queryParams = [];
 
       if (filters.studentId) {
-        query += " WHERE e.student_id = ?";
+        query += " WHERE m.estudiante_id = ?";
         queryParams.push(filters.studentId);
       }
+      if (filters.anioAcademico) {
+        if (filters.studentId) {
+          query += " AND m.anio_academico = ?";
+        } else {
+          query += " WHERE m.anio_academico = ?";
+        }
+        queryParams.push(filters.anioAcademico);
+      }
 
-      query += " ORDER BY e.enrollment_date DESC";
+      query += " ORDER BY m.fecha_matricula DESC";
 
       const [rows] = await pool.execute(query, queryParams);
       return rows;
@@ -35,22 +44,22 @@ const Enrollment = {
 
   getById: async (id) => {
     try {
-      const [rows] = await pool.execute(
-        `SELECT 
-          e.*, 
-          s.primer_nombre AS student_first_name, 
-          s.primer_apellido AS student_last_name, 
-          niv.nombre AS level_name, 
-          gr.nombre AS grade_name, 
-          sec.nombre AS section_name
-        FROM enrollments e
-        JOIN students s ON e.student_id = s.id
-        JOIN grades gr ON e.grade_id = gr.id
-        JOIN niveles_educativos niv ON gr.level_id = niv.id
-        JOIN sections sec ON e.section_id = sec.id
-        WHERE e.id = ?`,
-        [id]
-      );
+      const query = `
+        SELECT 
+          m.*,
+          e.primer_nombre AS estudiante_primer_nombre,
+          e.primer_apellido AS estudiante_primer_apellido,
+          ne.nombre AS nombre_nivel,
+          g.nombre AS nombre_grado,
+          s.nombre AS nombre_seccion
+        FROM matriculas m
+        JOIN estudiantes e ON m.estudiante_id = e.id
+        JOIN secciones s ON m.seccion_id = s.id
+        JOIN grados g ON s.grado_id = g.id
+        JOIN niveles_educativos ne ON g.nivel_id = ne.id
+        WHERE m.id = ?
+      `;
+      const [rows] = await pool.execute(query, [id]);
       return rows.length > 0 ? rows[0] : null;
     } catch (error) {
       console.error("Error en Enrollment.getById:", error);
@@ -60,31 +69,52 @@ const Enrollment = {
 
   create: async (enrollmentData) => {
     const {
-      student_id,
-      level_id,
-      grade_id,
-      section_id,
-      year,
-      estado_matricula,
+      estudiante_id,
+      seccion_id,
+      anio_academico,
+      fecha_matricula,
+      estado,
     } = enrollmentData;
-    if (!student_id || !grade_id || !section_id || !year || !estado_matricula) {
-      throw new Error("Faltan campos obligatorios para crear la matrícula.");
+
+    if (!estudiante_id || !seccion_id || !anio_academico || !estado) {
+      throw new Error(
+        "Faltan campos obligatorios: estudiante_id, seccion_id, anio_academico, estado."
+      );
     }
+
+    const formattedFechaMatricula = fecha_matricula
+      ? new Date(fecha_matricula)
+      : new Date();
+    if (isNaN(formattedFechaMatricula.getTime())) {
+      throw new Error("La fecha de matrícula proporcionada no es válida.");
+    }
+
     try {
       const result = await pool.execute(
-        "INSERT INTO enrollments (student_id, level_id, grade_id, section_id, year, estado_matricula, enrollment_date) VALUES (?, ?, ?, ?, ?, ?, NOW())",
-        [student_id, level_id, grade_id, section_id, year, estado_matricula]
+        `INSERT INTO matriculas (estudiante_id, seccion_id, anio_academico, fecha_matricula, estado) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          estudiante_id,
+          seccion_id,
+          anio_academico,
+          formattedFechaMatricula,
+          estado,
+        ]
       );
-      return {
+      const newEnrollment = {
         id: result.insertId,
-        ...enrollmentData,
-        enrollment_date: new Date(),
+        estudiante_id,
+        seccion_id,
+        anio_academico,
+        fecha_matricula: formattedFechaMatricula,
+        estado,
       };
+      return newEnrollment;
     } catch (error) {
       console.error("Error en Enrollment.create:", error);
       if (error.code === "ER_DUP_ENTRY") {
         throw new Error(
-          `Ya existe una matrícula para este estudiante en este año/grado.`
+          `Ya existe una matrícula para este estudiante en el año académico ${anio_academico}.`
         );
       }
       throw error;
@@ -92,40 +122,42 @@ const Enrollment = {
   },
 
   update: async (id, enrollmentData) => {
-    const { level_id, grade_id, section_id, year, estado_matricula } =
+    const { seccion_id, anio_academico, fecha_matricula, estado } =
       enrollmentData;
-    if (!id) throw new Error("Enrollment ID is required.");
+
+    if (!id)
+      throw new Error("Se requiere el ID de la matrícula para actualizar.");
 
     const fieldsToUpdate = [];
     const queryParams = [];
 
-    if (level_id !== undefined) {
-      fieldsToUpdate.push("level_id = ?");
-      queryParams.push(level_id);
+    if (seccion_id !== undefined) {
+      fieldsToUpdate.push("seccion_id = ?");
+      queryParams.push(seccion_id);
     }
-    if (grade_id !== undefined) {
-      fieldsToUpdate.push("grade_id = ?");
-      queryParams.push(grade_id);
+    if (anio_academico !== undefined) {
+      fieldsToUpdate.push("anio_academico = ?");
+      queryParams.push(anio_academico);
     }
-    if (section_id !== undefined) {
-      fieldsToUpdate.push("section_id = ?");
-      queryParams.push(section_id);
+    if (fecha_matricula !== undefined) {
+      const formattedFechaMatricula = new Date(fecha_matricula);
+      if (isNaN(formattedFechaMatricula.getTime())) {
+        throw new Error("La fecha de matrícula proporcionada no es válida.");
+      }
+      fieldsToUpdate.push("fecha_matricula = ?");
+      queryParams.push(formattedFechaMatricula);
     }
-    if (year !== undefined) {
-      fieldsToUpdate.push("year = ?");
-      queryParams.push(year);
-    }
-    if (estado_matricula !== undefined) {
-      fieldsToUpdate.push("estado_matricula = ?");
-      queryParams.push(estado_matricula);
+    if (estado !== undefined) {
+      fieldsToUpdate.push("estado = ?");
+      queryParams.push(estado);
     }
 
     if (fieldsToUpdate.length === 0) {
-      throw new Error("No hay campos para actualizar.");
+      throw new Error("No se proporcionaron campos para actualizar.");
     }
 
     try {
-      const query = `UPDATE enrollments SET ${fieldsToUpdate.join(
+      const query = `UPDATE matriculas SET ${fieldsToUpdate.join(
         ", "
       )} WHERE id = ?`;
       queryParams.push(id);
@@ -138,10 +170,11 @@ const Enrollment = {
   },
 
   delete: async (id) => {
-    if (!id) throw new Error("Enrollment ID is required.");
+    if (!id)
+      throw new Error("Se requiere el ID de la matrícula para eliminar.");
     try {
       const [result] = await pool.execute(
-        "DELETE FROM enrollments WHERE id = ?",
+        "DELETE FROM matriculas WHERE id = ?",
         [id]
       );
       if (result.affectedRows === 0) {

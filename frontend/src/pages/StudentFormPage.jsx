@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react";
 import api from "../api/api";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth"; // Para obtener el rol, aunque no se use directamente aquí, es buena práctica
+import { useAuth } from "../hooks/useAuth"; 
 
-const StudentFormPage = () => {
+const EstudianteFormPage = () => {
   const [studentData, setStudentData] = useState({
     primer_nombre: "",
     segundo_nombre: "",
     primer_apellido: "",
     segundo_apellido: "",
     fecha_nacimiento: "",
-    genero: "Masculino", // Valor por defecto
+    genero: "Masculino", 
     numero_identificacion: "",
     direccion: "",
     telefono: "",
@@ -302,4 +302,4 @@ const StudentFormPage = () => {
   );
 };
 
-export default StudentFormPage;
+export default EstudianteFormPage;

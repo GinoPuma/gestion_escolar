@@ -12,6 +12,8 @@ const studentRoutes = require("./routes/studentRoutes");
 const statsRoutes = require("./routes/statsRoutes");
 const enrollmentRoutes = require("./routes/enrollmentRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const tipoPagoRoutes = require("./routes/tipoPagoRoutes");
+const metodoPagoRoutes = require("./routes/metodoPagoRoutes");
 
 const app = express();
 
@@ -33,6 +35,8 @@ app.use("/api/students", studentRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/tipos_pago", tipoPagoRoutes);
+app.use("/api/metodos_pago", metodoPagoRoutes);
 
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
 app.get("*", (req, res) => {

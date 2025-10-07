@@ -1,36 +1,40 @@
 const express = require("express");
 const router = express.Router();
 const enrollmentController = require("../controllers/enrollmentController");
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize } = require("../middleware/authMiddleware");
 
 router.get(
   "/",
   protect,
-  authorize(["Secretaria", "Administrador"]),
+  authorize("Administrador", "Secretaria"),
   enrollmentController.getAllEnrollments
 );
+
 router.post(
   "/",
   protect,
-  authorize(["Secretaria", "Administrador"]),
+  authorize("Administrador", "Secretaria"),
   enrollmentController.createEnrollment
 );
+
 router.get(
   "/:id",
   protect,
-  authorize(["Secretaria", "Administrador"]),
+  authorize("Administrador", "Secretaria"),
   enrollmentController.getEnrollmentById
 );
+
 router.put(
   "/:id",
   protect,
-  authorize(["Secretaria", "Administrador"]),
+  authorize("Administrador", "Secretaria"),
   enrollmentController.updateEnrollment
 );
+
 router.delete(
   "/:id",
   protect,
-  authorize(["Administrador"]),
+  authorize("Administrador"), // Solo administradores pueden eliminar
   enrollmentController.deleteEnrollment
 );
 

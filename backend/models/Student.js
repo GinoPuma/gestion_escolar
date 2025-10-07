@@ -13,7 +13,7 @@ const Student = {
           g.nombre as nombre_grado,
           ne.nombre as nombre_nivel
         FROM estudiantes e
-        LEFT JOIN matriculas m ON e.id = m.estudiante_id AND m.estado = 'Activa'
+        LEFT JOIN matriculas m ON e.id = m.estudiante_id AND m.estado = 'Activo'
         LEFT JOIN secciones s ON m.seccion_id = s.id
         LEFT JOIN grados g ON s.grado_id = g.id
         LEFT JOIN niveles_educativos ne ON g.nivel_id = ne.id
@@ -39,7 +39,7 @@ const Student = {
           g.nombre as nombre_grado,
           ne.nombre as nombre_nivel
         FROM estudiantes e
-        LEFT JOIN matriculas m ON e.id = m.estudiante_id AND m.estado = 'Activa'
+        LEFT JOIN matriculas m ON e.id = m.estudiante_id AND m.estado = 'Activo'
         LEFT JOIN secciones s ON m.seccion_id = s.id
         LEFT JOIN grados g ON s.grado_id = g.id
         LEFT JOIN niveles_educativos ne ON g.nivel_id = ne.id
