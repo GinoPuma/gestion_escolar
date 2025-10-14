@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const pagoController = require("../controllers/pagoController");
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize } = require("../middleware/authMiddleware");
 
 router.get(
   "/",
@@ -36,6 +36,13 @@ router.delete(
   protect,
   authorize("Administrador"),
   pagoController.deletePago
+);
+
+router.get(
+  "/estado_cuenta/:matriculaId",
+  protect,
+  authorize("Secretaria", "Administrador"),
+  pagoController.getEstadoCuenta
 );
 
 module.exports = router;

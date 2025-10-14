@@ -23,6 +23,7 @@ import ResponsablesListPage from "./pages/ResponsablesListPage";
 import ResponsableFormPage from "./pages/ResponsableFormPage";
 import ReportesPage from "./pages/ReportesPage";
 import ConfiguracionPage from "./pages/ConfigurationPage";
+import EstadoCuentaWrapper from "./pages/EstadoCuentaWrapper";
 
 import Layout from "./components/Layout/Layout";
 
@@ -280,6 +281,15 @@ function App() {
               element={
                 <ProtectedRoute
                   element={ResponsableFormPage}
+                  allowedRoles={generalManagerRoles}
+                />
+              }
+            />
+            <Route
+              path="/estado_cuenta"
+              element={
+                <ProtectedRoute
+                  element={EstadoCuentaWrapper}
                   allowedRoles={generalManagerRoles}
                 />
               }

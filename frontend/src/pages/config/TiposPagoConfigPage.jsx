@@ -9,6 +9,7 @@ const TiposPagoConfigPage = () => {
     descripcion: "",
     precio_fijo: "",
     fecha_limite: "",
+    es_obligatorio: false,
   });
   const [editingTipoPago, setEditingTipoPago] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,7 @@ const TiposPagoConfigPage = () => {
         precio_fijo:
           tipo.precio_fijo !== null ? tipo.precio_fijo.toString() : "",
         fecha_limite: tipo.fecha_limite ? tipo.fecha_limite.split("T")[0] : "",
+        es_obligatorio: tipo.es_obligatorio || false,
       }));
       setTiposPago(formattedData);
     } catch (err) {
@@ -59,6 +61,7 @@ const TiposPagoConfigPage = () => {
         fecha_limite: newTipoPago.fecha_limite
           ? new Date(newTipoPago.fecha_limite).toISOString().split("T")[0]
           : null,
+        es_obligatorio: newTipoPago.es_obligatorio,
       };
       const response = await api.post("/tipos_pago", dataToSend);
       setTiposPago([
@@ -72,6 +75,7 @@ const TiposPagoConfigPage = () => {
           fecha_limite: response.data.fecha_limite
             ? response.data.fecha_limite.split("T")[0]
             : "",
+          es_obligatorio: response.data.es_obligatorio || false,
         },
       ]);
       setNewTipoPago({
@@ -79,6 +83,7 @@ const TiposPagoConfigPage = () => {
         descripcion: "",
         precio_fijo: "",
         fecha_limite: "",
+        es_obligatorio: false,
       });
       setSuccessMessage("Tipo de pago añadido correctamente.");
     } catch (err) {
@@ -96,6 +101,7 @@ const TiposPagoConfigPage = () => {
       descripcion: tipo.descripcion || "",
       precio_fijo: tipo.precio_fijo !== null ? tipo.precio_fijo.toString() : "",
       fecha_limite: tipo.fecha_limite ? tipo.fecha_limite.split("T")[0] : "",
+      es_obligatorio: tipo.es_obligatorio || false,
     });
   };
 
@@ -113,6 +119,7 @@ const TiposPagoConfigPage = () => {
         fecha_limite: newTipoPago.fecha_limite
           ? new Date(newTipoPago.fecha_limite).toISOString().split("T")[0]
           : null,
+        es_obligatorio: newTipoPago.es_obligatorio,
       };
       const response = await api.put(
         `/tipos_pago/${editingTipoPago.id}`,
@@ -130,6 +137,7 @@ const TiposPagoConfigPage = () => {
                 fecha_limite: response.data.fecha_limite
                   ? response.data.fecha_limite.split("T")[0]
                   : "",
+                es_obligatorio: response.data.es_obligatorio || false,
               }
             : tipo
         )
@@ -140,6 +148,7 @@ const TiposPagoConfigPage = () => {
         descripcion: "",
         precio_fijo: "",
         fecha_limite: "",
+        es_obligatorio: false,
       });
       setSuccessMessage("Tipo de pago actualizado correctamente.");
     } catch (err) {
@@ -206,9 +215,9 @@ const TiposPagoConfigPage = () => {
         </p>
       )}
 
-      {/* 🔹 Sección de formulario con campo Descripción agregado */}
+      {/* 🔹 Sección de formulario */}
       <div className="mb-6 flex flex-col md:flex-row gap-4 items-end">
-        <div className="flex-grow grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="flex-grow grid grid-cols-1 md:grid-cols-5 gap-4">
           <input
             type="text"
             placeholder="Nombre del Tipo de Pago (ej: Matrícula)"
@@ -245,6 +254,23 @@ const TiposPagoConfigPage = () => {
             }
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
+          {/* 🔹 Checkbox obligatorio */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={newTipoPago.es_obligatorio}
+              onChange={(e) =>
+                setNewTipoPago({
+                  ...newTipoPago,
+                  es_obligatorio: e.target.checked,
+                })
+              }
+              className="h-4 w-4"
+            />
+            <label className="text-sm text-gray-700">
+              Obligatorio para todos los estudiantes
+            </label>
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-2">
@@ -264,6 +290,7 @@ const TiposPagoConfigPage = () => {
                     descripcion: "",
                     precio_fijo: "",
                     fecha_limite: "",
+                    es_obligatorio: false,
                   });
                   setSuccessMessage("");
                 }}
@@ -309,6 +336,9 @@ const TiposPagoConfigPage = () => {
                   Fecha Límite
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Obligatorio
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
@@ -338,6 +368,9 @@ const TiposPagoConfigPage = () => {
                           timeZone: "America/Lima",
                         })
                       : "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                    {tipo.es_obligatorio ? "Sí" : "No"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-center space-x-2">
                     <button

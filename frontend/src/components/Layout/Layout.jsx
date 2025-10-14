@@ -21,7 +21,8 @@ const Layout = () => {
       { to: "/matriculas", label: "Matrículas", icon: "📚" },
       { to: "/pagos", label: "Pagos", icon: "💰" },
       { to: "/estudiantes", label: "Estudiantes", icon: "🧑‍🎓" },
-      { to: "/responsables", label: "Padres de Familia", icon: "👨‍👩‍👧‍👦" }
+      { to: "/responsables", label: "Padres de Familia", icon: "👨‍👩‍👧‍👦" },
+      { to: "/estado_cuenta", label: "Estado de Cuenta", icon: "📄" }
     );
   }
 
@@ -37,21 +38,22 @@ const Layout = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
       <aside className="w-64 bg-white shadow-lg flex flex-col">
         <div className="p-4 border-b border-gray-200 flex flex-col items-center">
-          {/* Logo */}
           <img src={logo} alt="Logo Institución" className="w-24 h-auto mb-2" />
           {institution?.nombre && (
             <h2 className="text-lg font-semibold text-gray-700 text-center truncate w-full">
               {institution.nombre}
             </h2>
           )}
-          {!loading &&
-            user && ( 
-              <p className="text-sm text-gray-500 mt-1">{user.rol}</p>
-            )}
+          {!loading && user && (
+            <p className="text-sm text-gray-500 mt-1">{user.rol}</p>
+          )}
         </div>
-        <nav className="flex-1 p-4 space-y-2">
+
+        {/* Sidebar Items con scroll si hay muchos */}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
           {sidebarItems.map((item) => (
             <Link
               key={item.to}
@@ -63,6 +65,8 @@ const Layout = () => {
             </Link>
           ))}
         </nav>
+
+        {/* Botón Cerrar Sesión siempre al final */}
         <div className="p-4 border-t border-gray-200">
           <button
             onClick={handleLogout}
@@ -73,21 +77,22 @@ const Layout = () => {
         </div>
       </aside>
 
+      {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white shadow-md py-4 px-6 border-b border-gray-200 flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-gray-800">
             {institutionName}
           </h1>
           <div className="flex items-center">
-            {user &&
-              !loading && ( 
-                <p className="text-gray-600 mr-4">
-                  ¡Hola,{" "}
-                  <span className="font-medium">{user.primer_nombre}</span>!
-                </p>
-              )}
+            {user && !loading && (
+              <p className="text-gray-600 mr-4">
+                ¡Hola, <span className="font-medium">{user.primer_nombre}</span>
+                !
+              </p>
+            )}
           </div>
         </header>
+
         <section className="flex-1 overflow-y-auto p-6 bg-gray-50">
           <Outlet />
         </section>

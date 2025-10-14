@@ -22,7 +22,7 @@ const TipoPago = {
   },
 
   create: async (tipoPagoData) => {
-    const { nombre, descripcion, precio_fijo, fecha_limite } = tipoPagoData;
+    const { nombre, descripcion, precio_fijo, fecha_limite, es_obligatorio } = tipoPagoData;
 
     if (!nombre) {
       throw new Error("El nombre del tipo de pago es obligatorio.");
@@ -30,8 +30,8 @@ const TipoPago = {
 
     try {
     const [result] = await pool.execute(
-      "INSERT INTO tipos_pago (nombre, descripcion, precio_fijo, fecha_limite) VALUES (?, ?, ?, ?)",
-      [nombre, descripcion || null, precio_fijo ?? null, fecha_limite ?? null]
+      "INSERT INTO tipos_pago (nombre, descripcion, precio_fijo, fecha_limite, es_obligatorio) VALUES (?, ?, ?, ?, ?)",
+      [nombre, descripcion || null, precio_fijo ?? null, fecha_limite ?? null, es_obligatorio ?? false]
     );
 
     const [rows] = await pool.execute("SELECT * FROM tipos_pago WHERE id = ?", [result.insertId]);
@@ -46,15 +46,15 @@ const TipoPago = {
   },
 
   update: async (id, tipoPagoData) => {
-    const { nombre, descripcion, precio_fijo, fecha_limite } = tipoPagoData;
+    const { nombre, descripcion, precio_fijo, fecha_limite, es_obligatorio } = tipoPagoData;
 
     if (!id) throw new Error("Se requiere el ID del tipo de pago para actualizar.");
     if (!nombre) throw new Error("El nombre del tipo de pago es obligatorio.");
 
     try {
       await pool.execute(
-        "UPDATE tipos_pago SET nombre = ?, descripcion = ?, precio_fijo = ?, fecha_limite = ? WHERE id = ?",
-        [nombre, descripcion || null, precio_fijo !== undefined ? precio_fijo : null, fecha_limite || null, id]
+        "UPDATE tipos_pago SET nombre = ?, descripcion = ?, precio_fijo = ?, fecha_limite = ?, es_obligatorio = ? WHERE id = ?",
+        [nombre, descripcion || null, precio_fijo !== undefined ? precio_fijo : null, fecha_limite || null, es_obligatorio ?? false, id]
       );
       return { id, ...tipoPagoData };
     } catch (error) {
