@@ -17,30 +17,25 @@ const PagosListPage = () => {
   const [filterMetodoPagoId, setFilterMetodoPagoId] = useState("");
   const [filterEstado, setFilterEstado] = useState("");
 
-  // Datos para los filtros
+  // Datos para filtros
   const [allMatriculas, setAllMatriculas] = useState([]);
   const [allTiposPago, setAllTiposPago] = useState([]);
   const [allMetodosPago, setAllMetodosPago] = useState([]);
 
-  // Estados posibles
   const estadosPago = ["Pendiente", "Completado", "Anulado"];
 
-  // Fetch pagos
+  // Fetch pagos según filtros
   const fetchPagos = async () => {
     setLoading(true);
     setError("");
     try {
       let url = "/pagos";
       const params = [];
-
       if (filterMatriculaId) params.push(`matriculaId=${filterMatriculaId}`);
       if (filterTipoPagoId) params.push(`tipoPagoId=${filterTipoPagoId}`);
       if (filterMetodoPagoId) params.push(`metodoPagoId=${filterMetodoPagoId}`);
       if (filterEstado) params.push(`estado=${filterEstado}`);
-
-      if (params.length > 0) {
-        url += `?${params.join("&")}`;
-      }
+      if (params.length > 0) url += `?${params.join("&")}`;
 
       const response = await api.get(url);
       setPagos(response.data);
@@ -50,9 +45,8 @@ const PagosListPage = () => {
       if (err.response) {
         errorMessage =
           err.response.data?.message || `Error ${err.response.status}`;
-        if (err.response.status === 403) {
+        if (err.response.status === 403)
           errorMessage = "No tienes permisos para ver esta sección.";
-        }
       }
       setError(errorMessage);
       setPagos([]);
@@ -80,7 +74,7 @@ const PagosListPage = () => {
       setAllTiposPago(tiposPagoRes.data);
       setAllMetodosPago(metodosPagoRes.data);
     } catch (err) {
-      console.error("Error fetching filter data for pagos:", err);
+      console.error("Error fetching filter data:", err);
       setError("Error al cargar datos para filtros de pago.");
       setAllMatriculas([]);
       setAllTiposPago([]);
@@ -121,7 +115,7 @@ const PagosListPage = () => {
     }
   };
 
-  // Acciones de la tabla
+  // Acciones tabla
   const renderActions = (pago) => {
     const studentFullName = `${pago.estudiante_primer_nombre || ""} ${
       pago.estudiante_primer_apellido || ""
@@ -149,7 +143,6 @@ const PagosListPage = () => {
     );
   };
 
-  // Columnas tabla
   const columns = useMemo(
     () => [
       { Header: "ID Pago", accessor: "id" },
@@ -186,9 +179,7 @@ const PagosListPage = () => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">
-          Listado de Pagos
-        </h2>
+        <h2 className="text-2xl font-semibold text-gray-800">Listado de Pagos</h2>
         <Link
           to="/pagos/new"
           className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"
@@ -223,87 +214,77 @@ const PagosListPage = () => {
       <div className="mb-6 p-4 bg-gray-100 rounded-lg shadow-inner">
         <h3 className="text-lg font-semibold text-gray-700 mb-3">Filtros</h3>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-          {/* Estudiante con Autocomplete */}
+          {/* Estudiante */}
           <div>
-            <label
-              htmlFor="filterMatriculaId"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Estudiante
             </label>
             <ReactSelect
               options={allMatriculas}
               value={
                 filterMatriculaId
-                  ? allMatriculas.find(
-                      (s) => s.matriculaId === filterMatriculaId
-                    )
+                  ? allMatriculas.find((s) => s.matriculaId === filterMatriculaId)
                   : null
               }
-              onChange={(selectedOption) =>
-                setFilterMatriculaId(selectedOption?.matriculaId || "")
+              onChange={(selected) =>
+                setFilterMatriculaId(selected?.matriculaId || "")
               }
               isClearable
               placeholder="Selecciona un estudiante..."
+              isSearchable
             />
           </div>
 
-          {/* Tipo Pago */}
+          {/* Tipo de Pago */}
           <div>
-            <label
-              htmlFor="filterTipoPagoId"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Tipo Pago
             </label>
-            <select
-              id="filterTipoPagoId"
-              value={filterTipoPagoId}
-              onChange={(e) => setFilterTipoPagoId(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            >
-              <option value="">Todos los tipos</option>
-              {allTiposPago.map((tipo) => (
-                <option key={tipo.id} value={tipo.id}>
-                  {tipo.nombre}
-                </option>
-              ))}
-            </select>
+            <ReactSelect
+              options={allTiposPago.map((t) => ({ value: t.id, label: t.nombre }))}
+              value={
+                filterTipoPagoId
+                  ? {
+                      value: filterTipoPagoId,
+                      label: allTiposPago.find((t) => t.id === filterTipoPagoId)?.nombre,
+                    }
+                  : null
+              }
+              onChange={(selected) => setFilterTipoPagoId(selected?.value || "")}
+              isClearable
+              placeholder="Selecciona un tipo..."
+              isSearchable
+            />
           </div>
 
-          {/* Método Pago */}
+          {/* Método de Pago */}
           <div>
-            <label
-              htmlFor="filterMetodoPagoId"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Método Pago
             </label>
-            <select
-              id="filterMetodoPagoId"
-              value={filterMetodoPagoId}
-              onChange={(e) => setFilterMetodoPagoId(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            >
-              <option value="">Todos los métodos</option>
-              {allMetodosPago.map((metodo) => (
-                <option key={metodo.id} value={metodo.id}>
-                  {metodo.nombre}
-                </option>
-              ))}
-            </select>
+            <ReactSelect
+              options={allMetodosPago.map((m) => ({ value: m.id, label: m.nombre }))}
+              value={
+                filterMetodoPagoId
+                  ? {
+                      value: filterMetodoPagoId,
+                      label: allMetodosPago.find((m) => m.id === filterMetodoPagoId)?.nombre,
+                    }
+                  : null
+              }
+              onChange={(selected) => setFilterMetodoPagoId(selected?.value || "")}
+              isClearable
+              placeholder="Selecciona un método..."
+              isSearchable
+            />
           </div>
 
           {/* Estado */}
           <div>
-            <label
-              htmlFor="filterEstado"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Estado
             </label>
             <select
-              id="filterEstado"
               value={filterEstado}
               onChange={(e) => setFilterEstado(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
@@ -317,7 +298,7 @@ const PagosListPage = () => {
             </select>
           </div>
 
-          {/* Limpiar Filtros */}
+          {/* Limpiar filtros */}
           <div className="flex items-end">
             <button
               onClick={() => {
@@ -372,9 +353,7 @@ const PagosListPage = () => {
                     <td
                       key={colIndex}
                       className={`px-6 py-4 whitespace-nowrap text-sm ${
-                        col.accessor === renderActions
-                          ? "text-right"
-                          : "text-gray-900"
+                        col.accessor === renderActions ? "text-right" : "text-gray-900"
                       }`}
                     >
                       {col.Cell

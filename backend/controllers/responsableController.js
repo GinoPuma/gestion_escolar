@@ -1,4 +1,5 @@
 const Responsable = require("../models/Responsable");
+const Student = require("../models/Student");
 
 exports.getAllResponsables = async (req, res) => {
   try {
@@ -22,12 +23,10 @@ exports.getResponsableById = async (req, res) => {
     res.json(responsable);
   } catch (error) {
     console.error("Error en responsableController.getResponsableById:", error);
-    res
-      .status(500)
-      .json({
-        message: "Error al obtener responsable por ID.",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Error al obtener responsable por ID.",
+      error: error.message,
+    });
   }
 };
 
@@ -59,11 +58,9 @@ exports.createResponsable = async (req, res) => {
       responsableData.email
     );
     if (exists) {
-      return res
-        .status(409)
-        .json({
-          message: "Ya existe un responsable con esta identificación o email.",
-        });
+      return res.status(409).json({
+        message: "Ya existe un responsable con esta identificación o email.",
+      });
     }
 
     const newResponsable = await Responsable.create(responsableData);
@@ -139,12 +136,9 @@ exports.updateResponsable = async (req, res) => {
         responsableData.email
       );
       if (exists) {
-        return res
-          .status(409)
-          .json({
-            message:
-              "Ya existe un responsable con esta identificación o email.",
-          });
+        return res.status(409).json({
+          message: "Ya existe un responsable con esta identificación o email.",
+        });
       }
     }
 
@@ -162,12 +156,10 @@ exports.updateResponsable = async (req, res) => {
       // Capturar duplicados de nuevo por si acaso
       return res.status(409).json({ message: error.message });
     }
-    res
-      .status(500)
-      .json({
-        message: "Error al actualizar responsable.",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Error al actualizar responsable.",
+      error: error.message,
+    });
   }
 };
 
@@ -184,12 +176,10 @@ exports.deleteResponsable = async (req, res) => {
     if (error.message.includes("asociado a estudiantes")) {
       return res.status(409).json({ message: error.message }); // Conflict si hay FK
     }
-    res
-      .status(500)
-      .json({
-        message: "Error al eliminar responsable.",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Error al eliminar responsable.",
+      error: error.message,
+    });
   }
 };
 
@@ -210,10 +200,126 @@ exports.getResponsableStudents = async (req, res) => {
       "Error en responsableController.getResponsableStudents:",
       error
     );
+    res.status(500).json({
+      message: "Error al obtener estudiantes del responsable.",
+      error: error.message,
+    });
+  }
+};
+
+exports.addStudentToResponsable = async (req, res) => {
+  try {
+    const { responsableId, estudianteId } = req.params; // O obtenerlos del body, depende de tu diseño
+
+    // Validar que ambos IDs existan
+    const responsable = await Responsable.getById(responsableId);
+    if (!responsable)
+      return res.status(404).json({ message: "Responsable no encontrado." });
+
+    const estudiante = await Student.getById(estudianteId);
+    if (!estudiante)
+      return res.status(404).json({ message: "Estudiante no encontrado." });
+
+    await Responsable.addStudent(responsableId, estudianteId);
+    res
+      .status(201)
+      .json({ message: "Estudiante asociado exitosamente al responsable." });
+  } catch (error) {
+    console.error(
+      "Error en responsableController.addStudentToResponsable:",
+      error
+    );
+    if (error.code === "ER_DUP_ENTRY") {
+      // Si intentas asociar dos veces
+      return res
+        .status(409)
+        .json({
+          message: "Este estudiante ya está asociado a este responsable.",
+        });
+    }
+    res
+      .status(500)
+      .json({ message: "Error al asociar estudiante.", error: error.message });
+  }
+};
+
+exports.removeStudentFromResponsable = async (req, res) => {
+  try {
+    const { responsableId, estudianteId } = req.params; // O del body
+
+    // Validar que ambos IDs existan (opcional pero recomendado)
+    const responsable = await Responsable.getById(responsableId);
+    if (!responsable)
+      return res.status(404).json({ message: "Responsable no encontrado." });
+
+    const estudiante = await Student.getById(estudianteId);
+    if (!estudiante)
+      return res.status(404).json({ message: "Estudiante no encontrado." });
+
+    await Responsable.removeStudent(responsableId, estudianteId);
+    res.json({
+      message: "Estudiante desasociado exitosamente del responsable.",
+    });
+  } catch (error) {
+    console.error(
+      "Error en responsableController.removeStudentFromResponsable:",
+      error
+    );
+    if (error.message.includes("no se encontró")) {
+      return res.status(404).json({ message: error.message });
+    }
+    res
+      .status(500)
+      .json({
+        message: "Error al desasociar estudiante.",
+        error: error.message,
+      });
+  }
+};
+
+// Añadir la ruta para obtener estudiantes de un responsable
+exports.getResponsableStudents = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const responsable = await Responsable.getById(id);
+    if (!responsable) {
+      return res.status(404).json({ message: "Responsable no encontrado." });
+    }
+    const students = await Responsable.getStudentsById(id);
+    res.json(students);
+  } catch (error) {
+    console.error(
+      "Error en responsableController.getResponsableStudents:",
+      error
+    );
     res
       .status(500)
       .json({
         message: "Error al obtener estudiantes del responsable.",
+        error: error.message,
+      });
+  }
+};
+
+// Añadir la ruta para obtener responsables de un estudiante
+exports.getStudentResponsables = async (req, res) => {
+  try {
+    const { id } = req.params; // Asumiendo que 'id' es el ID del estudiante
+    const estudiante = await Student.getById(id);
+    if (!estudiante) {
+      return res.status(404).json({ message: "Estudiante no encontrado." });
+    }
+    const responsables = await Student.getResponsablesById(id);
+    res.json(responsables);
+  } catch (error) {
+    console.error(
+      "Error en responsableController.getStudentResponsables:",
+      error
+    );
+    res
+      .status(500)
+      .json({
+        message: "Error al obtener responsables del estudiante.",
         error: error.message,
       });
   }

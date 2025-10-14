@@ -166,43 +166,36 @@ const Responsable = {
     }
   },
 
-  associateStudent: async (responsableId, estudianteId) => {
+  addStudent: async (responsableId, estudianteId) => {
     try {
       await pool.execute(
-        "INSERT INTO estudiante_responsable (estudiante_id, responsable_id) VALUES (?, ?)",
-        [estudianteId, responsableId]
+        "INSERT INTO estudiante_responsable (responsable_id, estudiante_id) VALUES (?, ?)",
+        [responsableId, estudianteId]
       );
-      return true; // Éxito
+      return true;
     } catch (error) {
-      console.error("Error en Responsable.associateStudent:", error);
-      // Manejar duplicados si la relación ya existe
-      if (error.code === "ER_DUP_ENTRY") {
-        throw new Error("Este estudiante ya está asociado a este responsable.");
-      }
-      throw error;
+      console.error("Error en Responsable.addStudent:", error);
+      throw error; 
     }
   },
 
-  // Método para desasociar un estudiante de un responsable
-  dissociateStudent: async (responsableId, estudianteId) => {
+  removeStudent: async (responsableId, estudianteId) => {
     try {
       const [result] = await pool.execute(
-        "DELETE FROM estudiante_responsable WHERE estudiante_id = ? AND responsable_id = ?",
-        [estudianteId, responsableId]
+        "DELETE FROM estudiante_responsable WHERE responsable_id = ? AND estudiante_id = ?",
+        [responsableId, estudianteId]
       );
       if (result.affectedRows === 0) {
-        throw new Error(
-          "La asociación estudiante-responsable no fue encontrada."
-        );
+        throw new Error("La asociación estudiante-responsable no se encontró.");
       }
-      return true; // Éxito
+      return true;
     } catch (error) {
-      console.error("Error en Responsable.dissociateStudent:", error);
+      console.error("Error en Responsable.removeStudent:", error);
       throw error;
     }
   },
 
-  // Método para obtener estudiantes asociados
+  // Método para obtener estudiantes asociados a un responsable (ya lo tenías, pero lo coloco aquí para consistencia)
   getStudentsById: async (id) => {
     try {
       const query = `
@@ -221,7 +214,7 @@ const Responsable = {
   },
 
   // Método para obtener responsables asociados a un estudiante
-  getResponsablesByStudentId: async (estudianteId) => {
+  getResponsablesById: async (id) => {
     try {
       const query = `
         SELECT r.*
@@ -230,10 +223,10 @@ const Responsable = {
         WHERE er.estudiante_id = ?
         ORDER BY r.primer_apellido, r.primer_nombre;
       `;
-      const [rows] = await pool.execute(query, [estudianteId]);
+      const [rows] = await pool.execute(query, [id]);
       return rows;
     } catch (error) {
-      console.error("Error en Responsable.getResponsablesByStudentId:", error);
+      console.error("Error en Responsable.getResponsablesById:", error);
       throw error;
     }
   },

@@ -2,32 +2,57 @@ import React, { useState, useEffect, useMemo } from "react";
 import api from "../api/api";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import ReactSelect from "react-select";
 
 const ResponsablesListPage = () => {
+  const [allResponsables, setAllResponsables] = useState([]);
   const [responsables, setResponsables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Obtener responsables desde la API
+  const [responsableStudentsMap, setResponsableStudentsMap] = useState({});
+  const [searchText, setSearchText] = useState("");
+  const [filterParentesco, setFilterParentesco] = useState("");
+  const [parentescos, setParentescos] = useState([]);
+
   const fetchResponsables = async () => {
     setLoading(true);
     setError("");
     try {
       const response = await api.get("/responsables");
+      setAllResponsables(response.data);
       setResponsables(response.data);
+
+      // Mapear estudiantes
+      const studentPromises = response.data.map(async (resp) => {
+        try {
+          const studentsRes = await api.get(
+            `/responsables/${resp.id}/students`
+          );
+          return { responsableId: resp.id, students: studentsRes.data };
+        } catch {
+          return { responsableId: resp.id, students: [] };
+        }
+      });
+
+      const results = await Promise.all(studentPromises);
+      const studentMap = {};
+      results.forEach(({ responsableId, students }) => {
+        studentMap[responsableId] = students;
+      });
+      setResponsableStudentsMap(studentMap);
+
+      // Obtener lista de parentescos únicos
+      const uniqueParentescos = [
+        ...new Set(response.data.map((r) => r.parentesco).filter(Boolean)),
+      ];
+      setParentescos(uniqueParentescos.map((p) => ({ value: p, label: p })));
     } catch (err) {
       console.error("Error fetching responsables:", err);
-      let errorMessage = "No se pudieron cargar los responsables.";
-      if (err.response) {
-        errorMessage =
-          err.response.data?.message || `Error ${err.response.status}`;
-        if (err.response.status === 403) {
-          errorMessage = "No tienes permisos para ver esta sección.";
-        }
-      }
-      setError(errorMessage);
+      setError("No se pudieron cargar los responsables.");
+      setAllResponsables([]);
       setResponsables([]);
     } finally {
       setLoading(false);
@@ -38,33 +63,50 @@ const ResponsablesListPage = () => {
     fetchResponsables();
   }, []);
 
-  // Eliminar responsable
+  // Filtrado local
+  useEffect(() => {
+    let filtered = [...allResponsables];
+
+    if (searchText) {
+      const text = searchText.toLowerCase();
+      filtered = filtered.filter(
+        (r) =>
+          `${r.primer_nombre || ""} ${r.segundo_nombre || ""} ${
+            r.primer_apellido || ""
+          } ${r.segundo_apellido || ""}`
+            .toLowerCase()
+            .includes(text) ||
+          (r.numero_identificacion || "").includes(text) ||
+          (r.email || "").toLowerCase().includes(text)
+      );
+    }
+
+    if (filterParentesco) {
+      filtered = filtered.filter((r) => r.parentesco === filterParentesco);
+    }
+
+    setResponsables(filtered);
+  }, [searchText, filterParentesco, allResponsables]);
+
   const handleDeleteResponsable = async (id, nombreCompleto) => {
     if (
       !window.confirm(
         `¿Estás seguro de que deseas eliminar a ${nombreCompleto}? Esto podría afectar a los estudiantes asociados.`
       )
-    ) {
+    )
       return;
-    }
 
     setError("");
     try {
       await api.delete(`/responsables/${id}`);
-      setResponsables(responsables.filter((resp) => resp.id !== id));
+      setAllResponsables(allResponsables.filter((r) => r.id !== id));
       alert(`${nombreCompleto} eliminado exitosamente.`);
     } catch (err) {
       console.error("Error deleting responsable:", err);
-      let errorMessage = "Error al eliminar al responsable.";
-      if (err.response) {
-        errorMessage =
-          err.response.data?.message || `Error ${err.response.status}`;
-      }
-      setError(errorMessage);
+      setError("Error al eliminar al responsable.");
     }
   };
 
-  // Acciones de cada fila
   const renderActions = (responsable) => {
     const nombreCompleto = `${responsable.primer_nombre || ""} ${
       responsable.primer_apellido || ""
@@ -89,7 +131,24 @@ const ResponsablesListPage = () => {
     );
   };
 
-  // Columnas de la tabla
+  const renderStudents = (responsableId) => {
+    const associatedStudents = responsableStudentsMap[responsableId] || [];
+    if (associatedStudents.length === 0)
+      return <span className="text-gray-500">-</span>;
+    return (
+      <ul className="list-disc list-inside text-sm text-gray-700">
+        {associatedStudents.slice(0, 3).map((student) => (
+          <li key={student.id}>
+            {student.primer_nombre} {student.primer_apellido}
+          </li>
+        ))}
+        {associatedStudents.length > 3 && (
+          <li>... y {associatedStudents.length - 3} más</li>
+        )}
+      </ul>
+    );
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -99,20 +158,24 @@ const ResponsablesListPage = () => {
             row.primer_apellido || ""
           } ${row.segundo_apellido || ""}`.trim(),
       },
-      { Header: "Identificación", accessor: "numero_identificacion" },
+      { Header: "DNI", accessor: "numero_identificacion" },
       { Header: "Teléfono", accessor: "telefono" },
       { Header: "Email", accessor: "email" },
       { Header: "Parentesco", accessor: "parentesco" },
+      {
+        Header: "Estudiantes Asociados",
+        accessor: (row) => renderStudents(row.id),
+      },
       { Header: "Acciones", accessor: renderActions },
     ],
-    [responsables]
+    [responsables, responsableStudentsMap]
   );
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold text-gray-800">
-          Listado de Responsables
+          Listado de Padres de Familia
         </h2>
         <Link
           to="/responsables/new"
@@ -132,6 +195,51 @@ const ResponsablesListPage = () => {
           </svg>
           Nuevo Responsable
         </Link>
+      </div>
+
+      {/* Filtros */}
+      <div className="mb-6 p-4 bg-gray-100 rounded-lg shadow-inner">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Buscar por nombre, DNI o email
+            </label>
+            <input
+              type="text"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Escribe texto..."
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Filtrar por parentesco
+            </label>
+            <ReactSelect
+              options={parentescos}
+              value={
+                parentescos.find((p) => p.value === filterParentesco) || null
+              }
+              onChange={(selected) =>
+                setFilterParentesco(selected ? selected.value : "")
+              }
+              isClearable
+              placeholder="Selecciona parentesco..."
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                setSearchText("");
+                setFilterParentesco("");
+              }}
+              className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-md w-full"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        </div>
       </div>
 
       {error && (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "../api/api";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import ReactSelect from "react-select";
 
 const MatriculaFormPage = () => {
   const [matriculaData, setMatriculaData] = useState({
@@ -42,22 +43,16 @@ const MatriculaFormPage = () => {
               ? response.data.fecha_matricula.split("T")[0]
               : "",
           };
-          console.log("Estado recibido del backend:", response.data.estado);
           setMatriculaData(formattedData);
         }
       } catch (err) {
-        console.error("Error fetching initial data for matricula form:", err);
-        let errorMessage = id
-          ? "Error al cargar datos de la matrícula."
-          : "Error al cargar datos para crear matrícula.";
-        if (err.response) {
-          errorMessage =
-            err.response.data?.message || `Error ${err.response.status}`;
-        }
-        setError(errorMessage);
-        if (id && err.response?.status === 404) {
-          navigate("/matriculas");
-        }
+        console.error("Error fetching initial data:", err);
+        setError(
+          id
+            ? "Error al cargar datos de la matrícula."
+            : "Error al cargar datos para crear matrícula."
+        );
+        if (id && err.response?.status === 404) navigate("/matriculas");
       } finally {
         setLoading(false);
       }
@@ -67,9 +62,14 @@ const MatriculaFormPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    setMatriculaData({ ...matriculaData, [name]: value });
+    setError("");
+  };
+
+  const handleSelectChange = (name, selectedOption) => {
     setMatriculaData({
       ...matriculaData,
-      [name]: value,
+      [name]: selectedOption ? selectedOption.value : "",
     });
     setError("");
   };
@@ -99,17 +99,12 @@ const MatriculaFormPage = () => {
     }
 
     try {
-      let response;
       if (isEditing) {
-        response = await api.put(`/enrollments/${id}`, matriculaData);
-        alert(
-          `Matrícula actualizada exitosamente.`
-        );
+        await api.put(`/enrollments/${id}`, matriculaData);
+        alert(`Matrícula actualizada exitosamente.`);
       } else {
-        response = await api.post("/enrollments", matriculaData);
-        alert(
-          `Matrícula creada exitosamente.`
-        );
+        await api.post("/enrollments", matriculaData);
+        alert(`Matrícula creada exitosamente.`);
       }
       navigate("/matriculas");
     } catch (err) {
@@ -122,13 +117,6 @@ const MatriculaFormPage = () => {
           err.response.data?.message ||
           err.response.data?.errors?.[0]?.msg ||
           `Error ${err.response.status}`;
-        if (err.response.status === 409) {
-          errorMessage =
-            err.response.data?.message ||
-            "Error de conflicto: la matrícula ya existe.";
-        } else if (err.response.status === 400) {
-          errorMessage = err.response.data?.message || "Error de validación.";
-        }
       }
       setError(errorMessage);
     } finally {
@@ -136,17 +124,17 @@ const MatriculaFormPage = () => {
     }
   };
 
-  const getStudentFullName = (student) => {
-    return `${student?.primer_nombre || ""} ${
-      student?.primer_apellido || ""
-    }`.trim();
-  };
+  const studentOptions = estudiantes.map((est) => ({
+    value: est.id,
+    label: `${est.primer_nombre || ""} ${est.primer_apellido || ""}`.trim(),
+  }));
 
-  const getSectionDetails = (seccion) => {
-    return `${seccion?.grado_nombre || ""} ${seccion?.nombre || ""} - ${
-      seccion?.nivel_nombre || ""
-    }`;
-  };
+  const sectionOptions = secciones.map((sec) => ({
+    value: sec.id,
+    label: `${sec.grado_nombre || ""} ${sec.nombre || ""} - ${
+      sec.nivel_nombre || ""
+    }`,
+  }));
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
@@ -180,41 +168,37 @@ const MatriculaFormPage = () => {
           <label className="block text-sm font-medium text-gray-700">
             Estudiante (*)
           </label>
-          <select
-            name="estudiante_id"
-            value={matriculaData.estudiante_id}
-            onChange={handleChange}
-            required
-            disabled={isEditing}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
-          >
-            <option value="">Seleccionar Estudiante</option>
-            {estudiantes.map((estudiante) => (
-              <option key={estudiante.id} value={estudiante.id}>
-                {getStudentFullName(estudiante)}
-              </option>
-            ))}
-          </select>
+          <ReactSelect
+            options={studentOptions}
+            value={
+              studentOptions.find(
+                (opt) => opt.value === matriculaData.estudiante_id
+              ) || null
+            }
+            onChange={(selected) =>
+              handleSelectChange("estudiante_id", selected)
+            }
+            isSearchable
+            placeholder="Selecciona estudiante..."
+            isDisabled={isEditing}
+          />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700">
             Sección (*)
           </label>
-          <select
-            name="seccion_id"
-            value={matriculaData.seccion_id}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          >
-            <option value="">Seleccionar Sección</option>
-            {secciones.map((seccion) => (
-              <option key={seccion.id} value={seccion.id}>
-                {getSectionDetails(seccion)}
-              </option>
-            ))}
-          </select>
+          <ReactSelect
+            options={sectionOptions}
+            value={
+              sectionOptions.find(
+                (opt) => opt.value === matriculaData.seccion_id
+              ) || null
+            }
+            onChange={(selected) => handleSelectChange("seccion_id", selected)}
+            isSearchable
+            placeholder="Selecciona sección..."
+          />
         </div>
 
         <div>
@@ -226,7 +210,6 @@ const MatriculaFormPage = () => {
             name="anio_academico"
             value={matriculaData.anio_academico}
             onChange={handleChange}
-            required
             placeholder="Ej: 2025"
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
@@ -253,7 +236,6 @@ const MatriculaFormPage = () => {
             name="estado"
             value={matriculaData.estado}
             onChange={handleChange}
-            required
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           >
             <option value="Activo">Activo</option>

@@ -150,6 +150,54 @@ const Student = {
       throw error;
     }
   },
+
+  getResponsablesById: async (id) => {
+    try {
+      const query = `
+        SELECT r.*
+        FROM responsables r
+        JOIN estudiante_responsable er ON r.id = er.responsable_id
+        WHERE er.estudiante_id = ?
+        ORDER BY r.primer_apellido, r.primer_nombre;
+      `;
+      const [rows] = await pool.execute(query, [id]);
+      return rows;
+    } catch (error) {
+      console.error("Error en Estudiante.getResponsablesById:", error);
+      throw error;
+    }
+  },
+
+  // Método para asociar un responsable a un estudiante
+  addResponsable: async (estudianteId, responsableId) => {
+    try {
+      await pool.execute(
+        "INSERT INTO estudiante_responsable (estudiante_id, responsable_id) VALUES (?, ?)",
+        [estudianteId, responsableId]
+      );
+      return true;
+    } catch (error) {
+      console.error("Error en Estudiante.addResponsable:", error);
+      throw error;
+    }
+  },
+
+  // Método para desasociar un responsable de un estudiante
+  removeResponsable: async (estudianteId, responsableId) => {
+    try {
+      const [result] = await pool.execute(
+        "DELETE FROM estudiante_responsable WHERE estudiante_id = ? AND responsable_id = ?",
+        [estudianteId, responsableId]
+      );
+      if (result.affectedRows === 0) {
+        throw new Error("La asociación estudiante-responsable no se encontró.");
+      }
+      return true;
+    } catch (error) {
+      console.error("Error en Estudiante.removeResponsable:", error);
+      throw error;
+    }
+  },
 };
 
 module.exports = Student;

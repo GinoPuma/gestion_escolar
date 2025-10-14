@@ -45,4 +45,14 @@ router.get(
   responsableController.getResponsableStudents
 );
 
+router.get("/:id/students", protect, authorize("Administrador", "Secretaria"), responsableController.getResponsableStudents);
+
+// Ruta para obtener los responsables asociados a un estudiante
+router.get("/students/:id/responsables", protect, authorize("Administrador", "Secretaria"), responsableController.getStudentResponsables);
+
+// Rutas para asociar/desasociar estudiantes a responsables (POST/DELETE)
+// Asumimos que el ID del responsable y estudiante vienen en la URL como parámetros
+router.post("/:responsableId/students/:estudianteId", protect, authorize("Administrador", "Secretaria"), responsableController.addStudentToResponsable);
+router.delete("/:responsableId/students/:estudianteId", protect, authorize("Administrador", "Secretaria"), responsableController.removeStudentFromResponsable);
+
 module.exports = router;

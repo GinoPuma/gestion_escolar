@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "../api/api";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import ReactSelect from "react-select";
 
 const PagoFormPage = () => {
   const [pagoData, setPagoData] = useState({
@@ -31,7 +32,6 @@ const PagoFormPage = () => {
       setError("");
 
       try {
-        // Cargar datos base
         const [matriculasRes, tiposPagoRes, metodosPagoRes] = await Promise.all(
           [
             api.get("/enrollments"),
@@ -44,11 +44,9 @@ const PagoFormPage = () => {
         setTiposPago(tiposPagoRes.data || []);
         setMetodosPago(metodosPagoRes.data || []);
 
-        // Si es edición
         if (id) {
           setIsEditing(true);
           const response = await api.get(`/pagos/${id}`);
-
           const formattedData = {
             ...response.data,
             fecha_pago: response.data.fecha_pago
@@ -67,17 +65,12 @@ const PagoFormPage = () => {
           setPagoData(formattedData);
         }
       } catch (err) {
-        console.error("Error fetching initial data for pago form:", err);
-        let errorMessage = id
-          ? "Error al cargar datos del pago."
-          : "Error al cargar datos para crear pago.";
-
-        if (err.response) {
-          errorMessage =
-            err.response.data?.message || `Error ${err.response.status}`;
-        }
-
-        setError(errorMessage);
+        console.error("Error fetching initial data:", err);
+        setError(
+          id
+            ? "Error al cargar datos del pago."
+            : "Error al cargar datos para crear pago."
+        );
         if (id && err.response?.status === 404) navigate("/pagos");
       } finally {
         setLoading(false);
@@ -93,7 +86,6 @@ const PagoFormPage = () => {
 
     if (name === "tipo_pago_id") {
       const selectedTipo = tiposPago.find((tp) => tp.id == value);
-
       if (selectedTipo && selectedTipo.precio_fijo) {
         setPagoData({
           ...pagoData,
@@ -104,13 +96,18 @@ const PagoFormPage = () => {
       }
     }
 
-    setPagoData({
-      ...pagoData,
-      [name]: processedValue,
-    });
-
+    setPagoData({ ...pagoData, [name]: processedValue });
     setError("");
   };
+
+  const handleSelectChange = (name, selectedOption) => {
+    setPagoData({
+      ...pagoData,
+      [name]: selectedOption ? selectedOption.value : "",
+    });
+    setError("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -160,40 +157,35 @@ const PagoFormPage = () => {
       let errorMessage = isEditing
         ? "Error al actualizar el pago."
         : "Error al crear el pago.";
-
       if (err.response) {
         errorMessage =
           err.response.data?.message ||
           err.response.data?.errors?.[0]?.msg ||
           `Error ${err.response.status}`;
       }
-
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const getMatriculaLabel = (matriculaId) => {
-    const matricula = matriculas.find((m) => m.id == matriculaId);
-    return matricula
-      ? `${matricula.estudiante_primer_nombre || ""} ${
-          matricula.estudiante_primer_apellido || ""
-        } (ID: ${matricula.id}) - Año: ${matricula.anio_academico}`
-      : "Seleccionar Matrícula";
-  };
+  // Opciones para ReactSelect
+  const matriculaOptions = matriculas.map((m) => ({
+    value: m.id,
+    label: `${m.estudiante_primer_nombre || ""} ${
+      m.estudiante_primer_apellido || ""
+    } (ID:${m.id}) - Año: ${m.anio_academico}`,
+  }));
 
-  const getTipoPagoLabel = (tipoPagoId) => {
-    const tipo = tiposPago.find((tp) => tp.id == tipoPagoId);
-    return tipo ? tipo.nombre : "Seleccionar Tipo de Pago";
-  };
+  const tiposPagoOptions = tiposPago.map((tp) => ({
+    value: tp.id,
+    label: tp.nombre,
+  }));
 
-  const getMetodoPagoLabel = (metodoId) => {
-    if (metodoId === null || metodoId === "" || metodoId === undefined)
-      return "No especificado";
-    const metodo = metodosPago.find((mp) => mp.id == metodoId);
-    return metodo ? metodo.nombre : "Método Desconocido";
-  };
+  const metodosPagoOptions = metodosPago.map((mp) => ({
+    value: mp.id,
+    label: mp.nombre,
+  }));
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
@@ -228,27 +220,18 @@ const PagoFormPage = () => {
           <label className="block text-sm font-medium text-gray-700">
             Matrícula (*)
           </label>
-          <select
-            name="matricula_id"
-            value={pagoData.matricula_id || ""}
-            onChange={handleChange}
-            required
-            disabled={isEditing}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
-          >
-            <option value="">
-              {isEditing
-                ? getMatriculaLabel(pagoData.matricula_id)
-                : "Seleccionar Matrícula"}
-            </option>
-            {!isEditing &&
-              matriculas.map((matricula) => (
-                <option key={matricula.id} value={matricula.id}>
-                  {getMatriculaLabel(matricula.id)}
-                </option>
-              ))}
-          </select>
+          <ReactSelect
+            options={matriculaOptions}
+            value={
+              matriculaOptions.find(
+                (opt) => opt.value == pagoData.matricula_id
+              ) || null
+            }
+            onChange={(opt) => handleSelectChange("matricula_id", opt)}
+            isSearchable
+            placeholder="Selecciona Matrícula..."
+            isDisabled={isEditing}
+          />
         </div>
 
         {/* Tipo de Pago */}
@@ -256,21 +239,17 @@ const PagoFormPage = () => {
           <label className="block text-sm font-medium text-gray-700">
             Tipo de Pago (*)
           </label>
-          <select
-            name="tipo_pago_id"
-            value={pagoData.tipo_pago_id || ""}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          >
-            <option value="">{getTipoPagoLabel(pagoData.tipo_pago_id)}</option>
-            {tiposPago.map((tipo) => (
-              <option key={tipo.id} value={tipo.id}>
-                {tipo.nombre}
-              </option>
-            ))}
-          </select>
+          <ReactSelect
+            options={tiposPagoOptions}
+            value={
+              tiposPagoOptions.find(
+                (opt) => opt.value == pagoData.tipo_pago_id
+              ) || null
+            }
+            onChange={(opt) => handleSelectChange("tipo_pago_id", opt)}
+            isSearchable
+            placeholder="Selecciona Tipo de Pago..."
+          />
         </div>
 
         {/* Monto */}
@@ -286,8 +265,7 @@ const PagoFormPage = () => {
             required
             step="0.01"
             placeholder="Ej: 100.50"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
         </div>
 
@@ -302,8 +280,7 @@ const PagoFormPage = () => {
             value={pagoData.fecha_pago || ""}
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
         </div>
 
@@ -312,23 +289,17 @@ const PagoFormPage = () => {
           <label className="block text-sm font-medium text-gray-700">
             Método de Pago
           </label>
-          <select
-            name="metodo_pago_id"
-            value={pagoData.metodo_pago_id || ""}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          >
-            <option value="">
-              {getMetodoPagoLabel(pagoData.metodo_pago_id)}
-            </option>
-            <option value="">-- No especificado --</option>
-            {metodosPago.map((metodo) => (
-              <option key={metodo.id} value={metodo.id}>
-                {metodo.nombre}
-              </option>
-            ))}
-          </select>
+          <ReactSelect
+            options={metodosPagoOptions}
+            value={
+              metodosPagoOptions.find(
+                (opt) => opt.value == pagoData.metodo_pago_id
+              ) || null
+            }
+            onChange={(opt) => handleSelectChange("metodo_pago_id", opt)}
+            isSearchable
+            placeholder="Selecciona Método de Pago..."
+          />
         </div>
 
         {/* Referencia */}
@@ -342,8 +313,7 @@ const PagoFormPage = () => {
             value={pagoData.referencia_pago || ""}
             onChange={handleChange}
             placeholder="Ej: Nro. de transacción"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
         </div>
 
@@ -357,8 +327,7 @@ const PagoFormPage = () => {
             value={pagoData.estado}
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           >
             <option value="Pendiente">Pendiente</option>
             <option value="Completado">Completado</option>
@@ -371,10 +340,7 @@ const PagoFormPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm 
-                       text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 
-                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 
-                       disabled:opacity-50"
+            className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
             {loading
               ? "Guardando..."
