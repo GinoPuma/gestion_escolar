@@ -4,7 +4,12 @@ import { Link } from "react-router-dom";
 
 const TiposPagoConfigPage = () => {
   const [tiposPago, setTiposPago] = useState([]);
-  const [newTipoPago, setNewTipoPago] = useState({ name: "", description: "" });
+  const [newTipoPago, setNewTipoPago] = useState({
+    nombre: "",
+    descripcion: "",
+    precio_fijo: "",
+    fecha_limite: "",
+  });
   const [editingTipoPago, setEditingTipoPago] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -20,7 +25,13 @@ const TiposPagoConfigPage = () => {
     setSuccessMessage("");
     try {
       const response = await api.get("/tipos_pago");
-      setTiposPago(response.data);
+      const formattedData = response.data.map((tipo) => ({
+        ...tipo,
+        precio_fijo:
+          tipo.precio_fijo !== null ? tipo.precio_fijo.toString() : "",
+        fecha_limite: tipo.fecha_limite ? tipo.fecha_limite.split("T")[0] : "",
+      }));
+      setTiposPago(formattedData);
     } catch (err) {
       console.error("Error fetching tipos de pago:", err);
       setError(
@@ -32,16 +43,43 @@ const TiposPagoConfigPage = () => {
   };
 
   const handleAddTipoPago = async () => {
-    if (!newTipoPago.name.trim()) return;
+    if (!newTipoPago.nombre.trim()) {
+      setError("El nombre del tipo de pago es obligatorio.");
+      return;
+    }
     setError("");
     setSuccessMessage("");
     try {
-      const response = await api.post("/tipos_pago", {
-        nombre: newTipoPago.name,
-        descripcion: newTipoPago.description || null,
+      const dataToSend = {
+        nombre: newTipoPago.nombre,
+        descripcion: newTipoPago.descripcion || null,
+        precio_fijo: newTipoPago.precio_fijo
+          ? parseFloat(newTipoPago.precio_fijo)
+          : null,
+        fecha_limite: newTipoPago.fecha_limite
+          ? new Date(newTipoPago.fecha_limite).toISOString().split("T")[0]
+          : null,
+      };
+      const response = await api.post("/tipos_pago", dataToSend);
+      setTiposPago([
+        ...tiposPago,
+        {
+          ...response.data,
+          precio_fijo:
+            response.data.precio_fijo !== null
+              ? response.data.precio_fijo.toString()
+              : "",
+          fecha_limite: response.data.fecha_limite
+            ? response.data.fecha_limite.split("T")[0]
+            : "",
+        },
+      ]);
+      setNewTipoPago({
+        nombre: "",
+        descripcion: "",
+        precio_fijo: "",
+        fecha_limite: "",
       });
-      setTiposPago([...tiposPago, response.data]);
-      setNewTipoPago({ name: "", description: "" });
       setSuccessMessage("Tipo de pago añadido correctamente.");
     } catch (err) {
       console.error("Error adding tipo de pago:", err);
@@ -52,36 +90,57 @@ const TiposPagoConfigPage = () => {
   };
 
   const handleEditTipoPago = (tipo) => {
-    setEditingTipoPago({
-      id: tipo.id,
-      name: tipo.nombre,
-      description: tipo.descripcion,
-    });
+    setEditingTipoPago(tipo);
     setNewTipoPago({
-      name: tipo.nombre,
-      description: tipo.descripcion || "",
+      nombre: tipo.nombre,
+      descripcion: tipo.descripcion || "",
+      precio_fijo: tipo.precio_fijo !== null ? tipo.precio_fijo.toString() : "",
+      fecha_limite: tipo.fecha_limite ? tipo.fecha_limite.split("T")[0] : "",
     });
   };
 
   const handleUpdateTipoPago = async () => {
-    if (!editingTipoPago || !newTipoPago.name.trim()) return;
+    if (!editingTipoPago || !newTipoPago.nombre.trim()) return;
     setError("");
     setSuccessMessage("");
     try {
+      const dataToSend = {
+        nombre: newTipoPago.nombre,
+        descripcion: newTipoPago.descripcion || null,
+        precio_fijo: newTipoPago.precio_fijo
+          ? parseFloat(newTipoPago.precio_fijo)
+          : null,
+        fecha_limite: newTipoPago.fecha_limite
+          ? new Date(newTipoPago.fecha_limite).toISOString().split("T")[0]
+          : null,
+      };
       const response = await api.put(
         `/tipos_pago/${editingTipoPago.id}`,
-        {
-          nombre: newTipoPago.name,
-          descripcion: newTipoPago.description || null,
-        }
+        dataToSend
       );
       setTiposPago(
         tiposPago.map((tipo) =>
-          tipo.id === editingTipoPago.id ? response.data : tipo
+          tipo.id === editingTipoPago.id
+            ? {
+                ...response.data,
+                precio_fijo:
+                  response.data.precio_fijo !== null
+                    ? response.data.precio_fijo.toString()
+                    : "",
+                fecha_limite: response.data.fecha_limite
+                  ? response.data.fecha_limite.split("T")[0]
+                  : "",
+              }
+            : tipo
         )
       );
       setEditingTipoPago(null);
-      setNewTipoPago({ name: "", description: "" });
+      setNewTipoPago({
+        nombre: "",
+        descripcion: "",
+        precio_fijo: "",
+        fecha_limite: "",
+      });
       setSuccessMessage("Tipo de pago actualizado correctamente.");
     } catch (err) {
       console.error("Error updating tipo de pago:", err);
@@ -147,57 +206,84 @@ const TiposPagoConfigPage = () => {
         </p>
       )}
 
+      {/* 🔹 Sección de formulario con campo Descripción agregado */}
       <div className="mb-6 flex flex-col md:flex-row gap-4 items-end">
-        <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex-grow grid grid-cols-1 md:grid-cols-4 gap-4">
           <input
             type="text"
             placeholder="Nombre del Tipo de Pago (ej: Matrícula)"
-            value={newTipoPago.name}
+            value={newTipoPago.nombre}
             onChange={(e) =>
-              setNewTipoPago({ ...newTipoPago, name: e.target.value })
+              setNewTipoPago({ ...newTipoPago, nombre: e.target.value })
             }
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
           <input
             type="text"
-            placeholder="Descripción (Opcional)"
-            value={newTipoPago.description}
+            placeholder="Descripción (opcional)"
+            value={newTipoPago.descripcion}
             onChange={(e) =>
-              setNewTipoPago({ ...newTipoPago, description: e.target.value })
+              setNewTipoPago({ ...newTipoPago, descripcion: e.target.value })
+            }
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          />
+          <input
+            type="number"
+            placeholder="Precio(ej: 150.00)"
+            value={newTipoPago.precio_fijo}
+            onChange={(e) =>
+              setNewTipoPago({ ...newTipoPago, precio_fijo: e.target.value })
+            }
+            step="0.01"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          />
+          <input
+            type="date"
+            value={newTipoPago.fecha_limite}
+            onChange={(e) =>
+              setNewTipoPago({ ...newTipoPago, fecha_limite: e.target.value })
             }
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
         </div>
 
-        {editingTipoPago ? (
-          <>
+        <div className="flex flex-col md:flex-row gap-2">
+          {editingTipoPago ? (
+            <>
+              <button
+                onClick={handleUpdateTipoPago}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md min-w-[120px]"
+              >
+                Actualizar
+              </button>
+              <button
+                onClick={() => {
+                  setEditingTipoPago(null);
+                  setNewTipoPago({
+                    nombre: "",
+                    descripcion: "",
+                    precio_fijo: "",
+                    fecha_limite: "",
+                  });
+                  setSuccessMessage("");
+                }}
+                className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md min-w-[120px]"
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
             <button
-              onClick={handleUpdateTipoPago}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md min-w-[150px]"
+              onClick={handleAddTipoPago}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md min-w-[120px]"
             >
-              Actualizar Tipo
+              Añadir Tipo
             </button>
-            <button
-              onClick={() => {
-                setEditingTipoPago(null);
-                setNewTipoPago({ name: "", description: "" });
-                setSuccessMessage("");
-              }}
-              className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md min-w-[150px]"
-            >
-              Cancelar
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={handleAddTipoPago}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md min-w-[150px]"
-          >
-            Añadir Tipo
-          </button>
-        )}
+          )}
+        </div>
       </div>
 
+      {/* 🔹 Tabla */}
       {loading ? (
         <p>Cargando tipos de pago...</p>
       ) : tiposPago.length === 0 ? (
@@ -217,6 +303,12 @@ const TiposPagoConfigPage = () => {
                   Descripción
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Precio Fijo
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Fecha Límite
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
@@ -232,6 +324,20 @@ const TiposPagoConfigPage = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {tipo.descripcion || "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                    {tipo.precio_fijo
+                      ? `S/ ${parseFloat(tipo.precio_fijo).toFixed(2)}`
+                      : "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                    {tipo.fecha_limite
+                      ? new Date(
+                          tipo.fecha_limite + "T00:00:00"
+                        ).toLocaleDateString("es-PE", {
+                          timeZone: "America/Lima",
+                        })
+                      : "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-center space-x-2">
                     <button

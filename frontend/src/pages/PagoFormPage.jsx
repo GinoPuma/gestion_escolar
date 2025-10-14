@@ -31,6 +31,7 @@ const PagoFormPage = () => {
       setError("");
 
       try {
+        // Cargar datos base
         const [matriculasRes, tiposPagoRes, metodosPagoRes] = await Promise.all(
           [
             api.get("/enrollments"),
@@ -43,6 +44,7 @@ const PagoFormPage = () => {
         setTiposPago(tiposPagoRes.data || []);
         setMetodosPago(metodosPagoRes.data || []);
 
+        // Si es edición
         if (id) {
           setIsEditing(true);
           const response = await api.get(`/pagos/${id}`);
@@ -87,13 +89,28 @@ const PagoFormPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const processedValue = value === "" ? null : value;
+
+    if (name === "tipo_pago_id") {
+      const selectedTipo = tiposPago.find((tp) => tp.id == value);
+
+      if (selectedTipo && selectedTipo.precio_fijo) {
+        setPagoData({
+          ...pagoData,
+          tipo_pago_id: processedValue,
+          monto: selectedTipo.precio_fijo.toString(),
+        });
+        return;
+      }
+    }
+
     setPagoData({
       ...pagoData,
-      [name]: name === "monto" ? value : value === "" ? null : value,
+      [name]: processedValue,
     });
+
     setError("");
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -123,10 +140,9 @@ const PagoFormPage = () => {
     const dataToSend = {
       ...pagoData,
       monto: montoNumerico,
-      metodo_pago_id:
-        pagoData.metodo_pago_id === "" || pagoData.metodo_pago_id === null
-          ? null
-          : parseInt(pagoData.metodo_pago_id),
+      metodo_pago_id: pagoData.metodo_pago_id
+        ? parseInt(pagoData.metodo_pago_id)
+        : null,
     };
 
     try {
@@ -163,7 +179,7 @@ const PagoFormPage = () => {
     return matricula
       ? `${matricula.estudiante_primer_nombre || ""} ${
           matricula.estudiante_primer_apellido || ""
-        } (ID: ${matricula.id})`
+        } (ID: ${matricula.id}) - Año: ${matricula.anio_academico}`
       : "Seleccionar Matrícula";
   };
 
@@ -218,7 +234,8 @@ const PagoFormPage = () => {
             onChange={handleChange}
             required
             disabled={isEditing}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
           >
             <option value="">
               {isEditing
@@ -244,13 +261,10 @@ const PagoFormPage = () => {
             value={pagoData.tipo_pago_id || ""}
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           >
-            <option value="">
-              {isEditing
-                ? getTipoPagoLabel(pagoData.tipo_pago_id)
-                : "Seleccionar Tipo de Pago"}
-            </option>
+            <option value="">{getTipoPagoLabel(pagoData.tipo_pago_id)}</option>
             {tiposPago.map((tipo) => (
               <option key={tipo.id} value={tipo.id}>
                 {tipo.nombre}
@@ -272,7 +286,8 @@ const PagoFormPage = () => {
             required
             step="0.01"
             placeholder="Ej: 100.50"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
         </div>
 
@@ -287,7 +302,8 @@ const PagoFormPage = () => {
             value={pagoData.fecha_pago || ""}
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
         </div>
 
@@ -300,7 +316,8 @@ const PagoFormPage = () => {
             name="metodo_pago_id"
             value={pagoData.metodo_pago_id || ""}
             onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           >
             <option value="">
               {getMetodoPagoLabel(pagoData.metodo_pago_id)}
@@ -325,7 +342,8 @@ const PagoFormPage = () => {
             value={pagoData.referencia_pago || ""}
             onChange={handleChange}
             placeholder="Ej: Nro. de transacción"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
         </div>
 
@@ -339,7 +357,8 @@ const PagoFormPage = () => {
             value={pagoData.estado}
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                       focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           >
             <option value="Pendiente">Pendiente</option>
             <option value="Completado">Completado</option>
@@ -347,12 +366,15 @@ const PagoFormPage = () => {
           </select>
         </div>
 
-        {/* Botón */}
+        {/* Botón de Submit */}
         <div className="col-span-1 md:col-span-2 text-right">
           <button
             type="submit"
-            className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             disabled={loading}
+            className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm 
+                       text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 
+                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 
+                       disabled:opacity-50"
           >
             {loading
               ? "Guardando..."

@@ -56,6 +56,17 @@ exports.createPago = async (req, res) => {
       return res.status(400).json({ message: "La matrícula especificada no existe." });
     }
 
+    const today = new Date();
+    const currentYear = today.getFullYear();
+
+    const pagoYear = new Date(fecha_pago).getFullYear();
+
+    if (matriculaExists.estado !== 'Activo' || matriculaExists.anio_academico !== pagoYear) {
+      return res.status(400).json({
+        message: `No se puede registrar este pago. La matrícula ID ${matricula_id} no está activa para el año ${pagoYear} o no corresponde a esta matrícula.`,
+      });
+    }
+
     const tipoPagoExists = await TipoPago.getById(tipo_pago_id);
     if (!tipoPagoExists) {
       return res.status(400).json({ message: "El tipo de pago especificado no existe." });
@@ -106,7 +117,17 @@ exports.updatePago = async (req, res) => {
         if (!matriculaExists) {
             return res.status(400).json({ message: "La matrícula especificada no existe." });
         }
+
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const pagoYear = new Date(pagoData.fecha_pago).getFullYear(); 
+      if (matriculaExists.estado !== 'Activo' || matriculaExists.anio_academico !== pagoYear) {
+        return res.status(400).json({
+          message: `No se puede actualizar este pago. La matrícula ID ${pagoData.matricula_id} no está activa para el año ${pagoYear} o no corresponde a esta matrícula.`,
+        });
+      }
     }
+
     if (pagoData.tipo_pago_id !== undefined) {
         const tipoPagoExists = await TipoPago.getById(pagoData.tipo_pago_id);
         if (!tipoPagoExists) {

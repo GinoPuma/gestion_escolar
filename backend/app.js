@@ -14,6 +14,7 @@ const enrollmentRoutes = require("./routes/enrollmentRoutes");
 const pagoRoutes = require("./routes/pagoRoutes");
 const tipoPagoRoutes = require("./routes/tipoPagoRoutes");
 const metodoPagoRoutes = require("./routes/metodoPagoRoutes");
+const responsableRoutes = require("./routes/responsableRoutes");
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/pagos", pagoRoutes);
 app.use("/api/tipos_pago", tipoPagoRoutes);
 app.use("/api/metodos_pago", metodoPagoRoutes);
+app.use("/api/responsables", responsableRoutes);
 
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
 app.get("*", (req, res) => {

@@ -12,7 +12,7 @@ exports.getDashboardStats = async (req, res) => {
     totalEstudiantes = estudiantesResult[0].count;
 
     const [matriculasResult] = await pool.execute(
-      "SELECT COUNT(*) as count FROM matriculas WHERE estado = 'Activa'"
+      "SELECT COUNT(*) as count FROM matriculas WHERE estado = 'Activo'"
     );
     matriculasActivas = matriculasResult[0].count;
 

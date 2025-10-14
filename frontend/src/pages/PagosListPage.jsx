@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import api from "../api/api";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import ReactSelect from "react-select";
 
 const PagosListPage = () => {
   const [pagos, setPagos] = useState([]);
@@ -10,15 +11,21 @@ const PagosListPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Filtros
   const [filterMatriculaId, setFilterMatriculaId] = useState("");
   const [filterTipoPagoId, setFilterTipoPagoId] = useState("");
   const [filterMetodoPagoId, setFilterMetodoPagoId] = useState("");
   const [filterEstado, setFilterEstado] = useState("");
 
+  // Datos para los filtros
   const [allMatriculas, setAllMatriculas] = useState([]);
   const [allTiposPago, setAllTiposPago] = useState([]);
   const [allMetodosPago, setAllMetodosPago] = useState([]);
 
+  // Estados posibles
+  const estadosPago = ["Pendiente", "Completado", "Anulado"];
+
+  // Fetch pagos
   const fetchPagos = async () => {
     setLoading(true);
     setError("");
@@ -54,6 +61,7 @@ const PagosListPage = () => {
     }
   };
 
+  // Fetch datos para filtros
   const fetchFilterData = async () => {
     try {
       const [matriculasRes, tiposPagoRes, metodosPagoRes] = await Promise.all([
@@ -61,7 +69,14 @@ const PagosListPage = () => {
         api.get("/tipos_pago"),
         api.get("/metodos_pago"),
       ]);
-      setAllMatriculas(matriculasRes.data);
+
+      const studentsWithMatricula = matriculasRes.data.map((m) => ({
+        id: m.estudiante_id,
+        label: `${m.estudiante_primer_nombre} ${m.estudiante_primer_apellido} (${m.id})`,
+        matriculaId: m.id,
+      }));
+
+      setAllMatriculas(studentsWithMatricula);
       setAllTiposPago(tiposPagoRes.data);
       setAllMetodosPago(metodosPagoRes.data);
     } catch (err) {
@@ -74,21 +89,22 @@ const PagosListPage = () => {
   };
 
   useEffect(() => {
-    fetchPagos();
-  }, [filterMatriculaId, filterTipoPagoId, filterMetodoPagoId, filterEstado]);
-
-  useEffect(() => {
     fetchFilterData();
   }, []);
 
+  useEffect(() => {
+    fetchPagos();
+  }, [filterMatriculaId, filterTipoPagoId, filterMetodoPagoId, filterEstado]);
+
+  // Eliminar pago
   const handleDeletePago = async (pagoId, studentFullName, tipoPagoNombre) => {
     if (
       !window.confirm(
         `¿Estás seguro de que deseas eliminar el pago de ${studentFullName} - ${tipoPagoNombre}? Esta acción no se puede deshacer.`
       )
-    ) {
+    )
       return;
-    }
+
     setError("");
     try {
       await api.delete(`/pagos/${pagoId}`);
@@ -105,6 +121,7 @@ const PagosListPage = () => {
     }
   };
 
+  // Acciones de la tabla
   const renderActions = (pago) => {
     const studentFullName = `${pago.estudiante_primer_nombre || ""} ${
       pago.estudiante_primer_apellido || ""
@@ -132,6 +149,7 @@ const PagosListPage = () => {
     );
   };
 
+  // Columnas tabla
   const columns = useMemo(
     () => [
       { Header: "ID Pago", accessor: "id" },
@@ -149,13 +167,8 @@ const PagosListPage = () => {
         accessor: "monto",
         Cell: ({ value }) => {
           const numericValue = parseFloat(value);
-
-          if (!isNaN(numericValue) && numericValue !== null && numericValue !== undefined) {
-            return `$${numericValue.toFixed(2)}`;
-          } else {
-            return "-";
-          }
-        }
+          return !isNaN(numericValue) ? `$${numericValue.toFixed(2)}` : "-";
+        },
       },
       {
         Header: "Fecha Pago",
@@ -169,8 +182,6 @@ const PagosListPage = () => {
     ],
     [user, pagos]
   );
-
-  const estadosPago = ["Pendiente", "Completado", "Anulado"];
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
@@ -212,29 +223,38 @@ const PagosListPage = () => {
       <div className="mb-6 p-4 bg-gray-100 rounded-lg shadow-inner">
         <h3 className="text-lg font-semibold text-gray-700 mb-3">Filtros</h3>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+          {/* Estudiante con Autocomplete */}
           <div>
             <label
               htmlFor="filterMatriculaId"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Matrícula ID
+              Estudiante
             </label>
-            <input
-              type="text"
-              id="filterMatriculaId"
-              value={filterMatriculaId}
-              onChange={(e) => setFilterMatriculaId(e.target.value)}
-              placeholder="Buscar por ID Matrícula"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            <ReactSelect
+              options={allMatriculas}
+              value={
+                filterMatriculaId
+                  ? allMatriculas.find(
+                      (s) => s.matriculaId === filterMatriculaId
+                    )
+                  : null
+              }
+              onChange={(selectedOption) =>
+                setFilterMatriculaId(selectedOption?.matriculaId || "")
+              }
+              isClearable
+              placeholder="Selecciona un estudiante..."
             />
           </div>
 
+          {/* Tipo Pago */}
           <div>
             <label
               htmlFor="filterTipoPagoId"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Tipo de Pago
+              Tipo Pago
             </label>
             <select
               id="filterTipoPagoId"
@@ -251,12 +271,13 @@ const PagosListPage = () => {
             </select>
           </div>
 
+          {/* Método Pago */}
           <div>
             <label
               htmlFor="filterMetodoPagoId"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Método de Pago
+              Método Pago
             </label>
             <select
               id="filterMetodoPagoId"
@@ -273,6 +294,7 @@ const PagosListPage = () => {
             </select>
           </div>
 
+          {/* Estado */}
           <div>
             <label
               htmlFor="filterEstado"
@@ -295,6 +317,7 @@ const PagosListPage = () => {
             </select>
           </div>
 
+          {/* Limpiar Filtros */}
           <div className="flex items-end">
             <button
               onClick={() => {
@@ -311,6 +334,7 @@ const PagosListPage = () => {
         </div>
       </div>
 
+      {/* Tabla de Pagos */}
       {loading && (
         <div className="flex justify-center items-center py-8">
           <p className="text-gray-500 text-lg">Cargando pagos...</p>
@@ -319,7 +343,7 @@ const PagosListPage = () => {
 
       {!loading && !error && pagos.length === 0 && (
         <div className="text-center py-8 text-gray-500">
-          No hay pagos registrados aún. ¡Registra el primer pago!
+          No hay pagos que coincidan con los filtros seleccionados.
         </div>
       )}
 
@@ -357,7 +381,7 @@ const PagosListPage = () => {
                         ? col.Cell({ value: pago[col.accessor], row: pago })
                         : typeof col.accessor === "function"
                         ? col.accessor(pago)
-                        : pago[col.accessor]}
+                        : pago[col.accessor] ?? "-"}
                     </td>
                   ))}
                 </tr>

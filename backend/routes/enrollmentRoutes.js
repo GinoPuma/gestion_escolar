@@ -34,7 +34,7 @@ router.put(
 router.delete(
   "/:id",
   protect,
-  authorize("Administrador"), // Solo administradores pueden eliminar
+  authorize("Administrador"),
   enrollmentController.deleteEnrollment
 );
 

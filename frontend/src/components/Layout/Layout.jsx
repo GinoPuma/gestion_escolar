@@ -20,7 +20,8 @@ const Layout = () => {
     sidebarItems.push(
       { to: "/matriculas", label: "Matrículas", icon: "📚" },
       { to: "/pagos", label: "Pagos", icon: "💰" },
-      { to: "/estudiantes", label: "Estudiantes", icon: "🧑‍🎓" }
+      { to: "/estudiantes", label: "Estudiantes", icon: "🧑‍🎓" },
+      { to: "/responsables", label: "Padres de Familia", icon: "👨‍👩‍👧‍👦" }
     );
   }
 

@@ -22,42 +22,44 @@ const TipoPago = {
   },
 
   create: async (tipoPagoData) => {
-    const { nombre, descripcion } = tipoPagoData;
+    const { nombre, descripcion, precio_fijo, fecha_limite } = tipoPagoData;
 
     if (!nombre) {
       throw new Error("El nombre del tipo de pago es obligatorio.");
     }
 
     try {
-      const [result] = await pool.execute(
-        "INSERT INTO tipos_pago (nombre, descripcion) VALUES (?, ?)",
-        [nombre, descripcion || null] // Permitir descripcion nula
-      );
-      return { id: result.insertId, nombre, descripcion };
-    } catch (error) {
-      console.error("Error en TipoPago.create:", error);
-      if (error.code === "ER_DUP_ENTRY") {
-        throw new Error("Ya existe un tipo de pago con ese nombre.");
-      }
-      throw error;
+    const [result] = await pool.execute(
+      "INSERT INTO tipos_pago (nombre, descripcion, precio_fijo, fecha_limite) VALUES (?, ?, ?, ?)",
+      [nombre, descripcion || null, precio_fijo ?? null, fecha_limite ?? null]
+    );
+
+    const [rows] = await pool.execute("SELECT * FROM tipos_pago WHERE id = ?", [result.insertId]);
+    return rows[0];
+  } catch (error) {
+    console.error("Error en TipoPago.create:", error);
+    if (error.code === "ER_DUP_ENTRY") {
+      throw new Error("Ya existe un tipo de pago con ese nombre.");
     }
+    throw error;
+  }
   },
 
   update: async (id, tipoPagoData) => {
-    const { nombre, descripcion } = tipoPagoData;
+    const { nombre, descripcion, precio_fijo, fecha_limite } = tipoPagoData;
 
     if (!id) throw new Error("Se requiere el ID del tipo de pago para actualizar.");
     if (!nombre) throw new Error("El nombre del tipo de pago es obligatorio.");
 
     try {
       await pool.execute(
-        "UPDATE tipos_pago SET nombre = ?, descripcion = ? WHERE id = ?",
-        [nombre, descripcion || null, id]
+        "UPDATE tipos_pago SET nombre = ?, descripcion = ?, precio_fijo = ?, fecha_limite = ? WHERE id = ?",
+        [nombre, descripcion || null, precio_fijo !== undefined ? precio_fijo : null, fecha_limite || null, id]
       );
       return { id, ...tipoPagoData };
     } catch (error) {
       console.error("Error en TipoPago.update:", error);
-       if (error.code === "ER_DUP_ENTRY") {
+      if (error.code === "ER_DUP_ENTRY") {
         throw new Error("Ya existe otro tipo de pago con ese nombre.");
       }
       throw error;
@@ -74,7 +76,6 @@ const TipoPago = {
       return { message: "Tipo de pago eliminado exitosamente." };
     } catch (error) {
       console.error("Error en TipoPago.delete:", error);
-      // Podría haber un error de clave foránea si hay pagos asociados
       if (error.code === 'ER_ROW_IS_REFERENCED_2') {
         throw new Error("No se puede eliminar este tipo de pago porque está asociado a pagos existentes.");
       }

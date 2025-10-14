@@ -26,13 +26,13 @@ exports.getTipoPagoById = async (req, res) => {
 
 exports.createTipoPago = async (req, res) => {
   try {
-    const { nombre, descripcion } = req.body;
+    const { nombre, descripcion, precio_fijo, fecha_limite } = req.body;
 
     if (!nombre) {
       return res.status(400).json({ message: "El nombre del tipo de pago es obligatorio." });
     }
 
-    const newTipoPago = await TipoPago.create({ nombre, descripcion });
+    const newTipoPago = await TipoPago.create({ nombre, descripcion, fecha_limite, precio_fijo });
     res.status(201).json(newTipoPago);
   } catch (error) {
     console.error("Error en tipoPagoController.createTipoPago:", error);
@@ -49,13 +49,13 @@ exports.createTipoPago = async (req, res) => {
 exports.updateTipoPago = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, descripcion } = req.body;
+    const { nombre, descripcion, precio_fijo, fecha_limite } = req.body;
 
     if (!nombre) {
       return res.status(400).json({ message: "El nombre del tipo de pago es obligatorio." });
     }
 
-    const updatedTipoPago = await TipoPago.update(id, { nombre, descripcion });
+    const updatedTipoPago = await TipoPago.update(id, { nombre, descripcion, fecha_limite, precio_fijo });
     res.json(updatedTipoPago);
   } catch (error) {
     console.error("Error en tipoPagoController.updateTipoPago:", error);

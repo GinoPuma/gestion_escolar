@@ -82,17 +82,39 @@ const Enrollment = {
       );
     }
 
+    // 🗓️ Validar que la fecha de matrícula no sea de años pasados
+    const currentYear = new Date().getFullYear();
     const formattedFechaMatricula = fecha_matricula
       ? new Date(fecha_matricula)
       : new Date();
+
     if (isNaN(formattedFechaMatricula.getTime())) {
       throw new Error("La fecha de matrícula proporcionada no es válida.");
     }
 
+    const enrollmentYear = formattedFechaMatricula.getFullYear();
+    if (enrollmentYear < currentYear) {
+      throw new Error(
+        "No se permite registrar matrículas con fechas de años anteriores."
+      );
+    }
+
+    // 🧾 Validar que el estudiante no tenga más de una matrícula en el mismo año académico
+    const [existingEnrollment] = await pool.execute(
+      `SELECT id FROM matriculas WHERE estudiante_id = ? AND anio_academico = ?`,
+      [estudiante_id, anio_academico]
+    );
+
+    if (existingEnrollment.length > 0) {
+      throw new Error(
+        `El estudiante ya tiene una matrícula registrada en el año académico ${anio_academico}.`
+      );
+    }
+
     try {
-      const result = await pool.execute(
+      const [result] = await pool.execute(
         `INSERT INTO matriculas (estudiante_id, seccion_id, anio_academico, fecha_matricula, estado) 
-         VALUES (?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?)`,
         [
           estudiante_id,
           seccion_id,
@@ -101,7 +123,8 @@ const Enrollment = {
           estado,
         ]
       );
-      const newEnrollment = {
+
+      return {
         id: result.insertId,
         estudiante_id,
         seccion_id,
@@ -109,7 +132,6 @@ const Enrollment = {
         fecha_matricula: formattedFechaMatricula,
         estado,
       };
-      return newEnrollment;
     } catch (error) {
       console.error("Error en Enrollment.create:", error);
       if (error.code === "ER_DUP_ENTRY") {

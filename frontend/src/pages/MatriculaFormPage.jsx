@@ -143,9 +143,9 @@ const MatriculaFormPage = () => {
   };
 
   const getSectionDetails = (seccion) => {
-    return `${seccion?.nombre || ""} (${seccion?.grado_nombre || ""} - ${
+    return `${seccion?.grado_nombre || ""} ${seccion?.nombre || ""} - ${
       seccion?.nivel_nombre || ""
-    })`;
+    }`;
   };
 
   return (

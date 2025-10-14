@@ -19,6 +19,8 @@ import PagosListPage from "./pages/PagosListPage";
 import PagoFormPage from "./pages/PagoFormPage";
 import EstudiantesListPage from "./pages/EstudiantesListPage";
 import EstudianteFormPage from "./pages/StudentFormPage";
+import ResponsablesListPage from "./pages/ResponsablesListPage";
+import ResponsableFormPage from "./pages/ResponsableFormPage";
 import ReportesPage from "./pages/ReportesPage";
 import ConfiguracionPage from "./pages/ConfigurationPage";
 
@@ -252,6 +254,33 @@ function App() {
                 <ProtectedRoute
                   element={MetodosPagoConfigPage}
                   allowedRoles={["Administrador"]}
+                />
+              }
+            />
+            <Route
+              path="/responsables"
+              element={
+                <ProtectedRoute
+                  element={ResponsablesListPage}
+                  allowedRoles={generalManagerRoles}
+                />
+              }
+            />
+            <Route
+              path="/responsables/new"
+              element={
+                <ProtectedRoute
+                  element={ResponsableFormPage}
+                  allowedRoles={generalManagerRoles}
+                />
+              }
+            />
+            <Route
+              path="/responsables/edit/:id"
+              element={
+                <ProtectedRoute
+                  element={ResponsableFormPage}
+                  allowedRoles={generalManagerRoles}
                 />
               }
             />

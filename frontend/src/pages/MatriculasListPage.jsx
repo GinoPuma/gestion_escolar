@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import api from "../api/api";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import ReactSelect from "react-select";
 
 const MatriculasListPage = () => {
   const [matriculas, setMatriculas] = useState([]);
@@ -178,6 +179,7 @@ const MatriculasListPage = () => {
       <div className="mb-6 p-4 bg-gray-100 rounded-lg shadow-inner">
         <h3 className="text-lg font-semibold text-gray-700 mb-3">Filtros</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+          {/* Autocomplete Estudiantes */}
           <div>
             <label
               htmlFor="filterStudentId"
@@ -185,20 +187,33 @@ const MatriculasListPage = () => {
             >
               Estudiante
             </label>
-            <select
-              id="filterStudentId"
-              value={filterStudentId}
-              onChange={(e) => setFilterStudentId(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            >
-              <option value="">Todos los estudiantes</option>
-              {allStudents.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.primer_nombre} {student.primer_apellido}
-                </option>
-              ))}
-            </select>
+            <ReactSelect
+              options={allStudents.map((student) => ({
+                value: student.id,
+                label: `${student.primer_nombre} ${student.primer_apellido}`,
+              }))}
+              value={
+                filterStudentId
+                  ? {
+                      value: filterStudentId,
+                      label:
+                        allStudents.find((s) => s.id === filterStudentId)
+                          ?.primer_nombre +
+                        " " +
+                        allStudents.find((s) => s.id === filterStudentId)
+                          ?.primer_apellido,
+                    }
+                  : null
+              }
+              onChange={(selectedOption) =>
+                setFilterStudentId(selectedOption?.value || "")
+              }
+              isClearable
+              placeholder="Selecciona un estudiante..."
+            />
           </div>
+
+          {/* Año Académico */}
           <div>
             <label
               htmlFor="filterAnioAcademico"
@@ -215,6 +230,7 @@ const MatriculasListPage = () => {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
+
           <div className="flex items-end">
             <button
               onClick={() => {
